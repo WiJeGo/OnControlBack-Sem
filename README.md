@@ -1,204 +1,74 @@
 # 🏥 OnControl Backend v2.0
+> **Sistema de Gestión Oncológica Integral**
 
-OnControl Backend es una plataforma monolítica desarrollada en **Java 21** con **Spring Boot**, siguiendo principios de **Domain-Driven Design (DDD)**. Proporciona una API RESTful para un sistema de gestión de pacientes oncológicos que conecta organizaciones, doctores y pacientes.
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.x-brightgreen)](https://spring.io/projects/spring-boot)
+[![Java](https://img.shields.io/badge/Java-21-orange)](https://www.oracle.com/java/)
+[![Security](https://img.shields.io/badge/Security-JWT-blue)](https://jwt.io/)
+[![Deployment](https://img.shields.io/badge/Deployed%20on-Render-000000)](https://oncontrol-backend-api.onrender.com)
 
-## ✨ Características
-
-- **Arquitectura jerárquica** - Organizaciones → Doctores → Pacientes
-- **33 Endpoints RESTful** organizados por contextos de dominio
-- **Documentación OpenAPI** integrada con Swagger UI
-- **Seguridad y Autenticación** con Spring Security y JWT
-- **Dashboards con filtros** para cada tipo de usuario
-- **Seguimiento de síntomas** en tiempo real
-- **Gestión de citas** entre doctores y pacientes
-- **Persistencia** con Spring Data JPA y MySQL
-- **Auditoría automática** de entidades (createdAt, updatedAt)
+OnControl es una plataforma desarrollada en **Java 21** con **Spring Boot**, siguiendo principios de **Domain-Driven Design (DDD)**. Proporciona una API RESTful robusta para conectar Organizaciones Médicas, Doctores y Pacientes en un ecosistema de salud digital.
 
 ---
 
-## 🏗️ Arquitectura
-
-### Nueva Arquitectura Jerárquica v2.0
-
-```
-Users (Organizaciones/Empresas)
-  └─► Profiles (Datos comunes: nombre, email, etc.)
-      ├─► DoctorProfile (Especialización, licencia, etc.)
-      │   └─► PatientProfile (Historial médico, tratamiento, etc.)
-      │       ├─► Appointments (Citas médicas)
-      │       └─► Symptoms (Síntomas reportados)
-```
-
-### Flujo de Trabajo
-
-1. **Organizaciones se registran** → Tabla `users`
-2. **Organizaciones crean Doctores** → Tablas `profiles` + `doctor_profiles`
-3. **Doctores crean Pacientes** → Tablas `profiles` + `patient_profiles`
-4. **Doctores y Pacientes crean Citas** → Tabla `appointments`
-5. **Pacientes reportan Síntomas** → Tabla `symptoms`
+## 🚀 Conectividad del Ecosistema
+*   **Backend API:** [https://oncontrol-backend-api.onrender.com](https://oncontrol-backend-api.onrender.com)
+*   **Frontend Web:** [https://oncontrol-front-sem.vercel.app](https://oncontrol-front-sem.vercel.app)
+*   **Documentación Interactiva:** [Swagger UI](https://oncontrol-backend-api.onrender.com/swagger-ui.html)
 
 ---
 
-## 📊 Módulos (Bounded Contexts)
+## ✨ Funcionalidades por Rol
+
+### 🏢 Módulo de Organización (Administrativo)
+*   **Dashboard Institucional:** Vista global de médicos activos, pacientes totales y citas programadas.
+*   **Gestión de Cuerpo Médico:** Registro de especialistas y asignación de credenciales médicas.
+*   **Control de Capacidad:** Monitorización de límites operativos del centro de salud.
+
+### 🩺 Módulo Médico (Clínico)
+*   **Seguimiento Oncológico:** Monitoreo de síntomas reportados y evolución de pacientes.
+*   **Gestión de Tratamientos:** Creación de protocolos (Quimio, Radio, Inmunoterapia) y control de ciclos.
+*   **Agenda Digital:** Programación, confirmación y reprogramación de citas médicas.
+*   **Prescripción Farmacéutica:** Registro detallado de medicación y dosis.
+
+### 👤 Módulo del Paciente (Autogestión)
+*   **Diario de Salud:** Registro de síntomas diarios con niveles de severidad (Leve a Crítico).
+*   **Adherencia Terapéutica:** Marcado de dosis tomadas y recordatorios automáticos.
+*   **Expediente Personal:** Acceso a historial clínico, alergias y progreso del tratamiento.
+
+---
+
+## 📊 Módulos Detallados (Bounded Contexts)
 
 ### 1. 🔐 Identity & Access Management (IAM)
-**Responsabilidad:** Autenticación y gestión de organizaciones
-
-**Endpoints:**
-- `POST /api/auth/register/organization` - Registro de organizaciones
-- `POST /api/auth/login` - Login unificado (organizaciones, doctores, pacientes)
-
-**Entidades:**
-- `User` - Organizaciones/Empresas (con country, city, maxDoctors, etc.)
-- `UserRole` - ORGANIZATION, ADMIN
-
----
+**Responsabilidad:** Autenticación multi-rol y gestión de organizaciones.
+- `POST /api/auth/register/organization` - Registro de organizaciones.
+- `POST /api/auth/login` - Login unificado con JWT.
 
 ### 2. 👥 Profiles
-**Responsabilidad:** Gestión de perfiles de doctores y pacientes
-
-**Endpoints:**
-- `POST /api/organizations/{id}/doctors` - Organización crea doctor
-- `GET /api/organizations/{id}/doctors` - Listar doctores
-- `POST /api/doctors/{id}/patients` - Doctor crea paciente
-- `GET /api/doctors/{id}/patients` - Listar pacientes
-
-**Entidades:**
-- `Profile` - Datos comunes (firstName, lastName, email, password)
-- `DoctorProfile` - Datos específicos de doctores
-- `PatientProfile` - Datos específicos de pacientes
-- `ProfileType` - DOCTOR, PATIENT
-
----
+**Responsabilidad:** Jerarquía de perfiles (Org -> Doc -> Pat).
+- `POST /api/organizations/{id}/doctors` - Crear doctor.
+- `POST /api/doctors/{id}/patients` - Crear paciente.
 
 ### 3. 📅 Appointments
-**Responsabilidad:** Gestión de citas médicas
-
-**Endpoints:**
-- `POST /api/appointments/doctor/{doctorId}/patient/{patientId}` - Crear cita
-- `GET /api/appointments/doctor/{doctorId}` - Citas del doctor
-- `GET /api/appointments/patient/{patientId}` - Citas del paciente
-- `PATCH /api/appointments/{id}/status` - Actualizar estado
-- `PATCH /api/appointments/{id}/follow-up` - Agregar notas
-
-**Estados:** SCHEDULED, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW  
-**Tipos:** CONSULTATION, FOLLOW_UP, CHECKUP, EMERGENCY, PROCEDURE
-
----
+**Responsabilidad:** Gestión de citas y estados (SCHEDULED, CONFIRMED, COMPLETED, CANCELLED).
+- `POST /api/appointments/doctor/{docId}/patient/{patId}` - Agendar cita.
+- `PATCH /api/appointments/{id}/status` - Cambiar estado.
 
 ### 4. 🩺 Symptoms & Monitoring
-**Responsabilidad:** Seguimiento de síntomas de pacientes
+**Responsabilidad:** Reporte de síntomas y alertas críticas.
+- `POST /api/symptoms/patient/{id}` - Reportar síntoma.
+- `GET /api/symptoms/patient/{id}/stats` - Estadísticas de severidad.
 
-**Endpoints:**
-- `POST /api/symptoms/patient/{id}` - Reportar síntoma
-- `GET /api/symptoms/patient/{id}` - Ver todos los síntomas
-- `GET /api/symptoms/patient/{id}/recent` - Síntomas recientes
-- `GET /api/symptoms/patient/{id}/stats` - Estadísticas
-
-**Severidad:** MILD, MODERATE, SEVERE, CRITICAL
+### 5. 📊 Dashboard & Reports
+**Responsabilidad:** Vistas agregadas con filtros dinámicos (Organización por Doctor, Doctor por Paciente).
 
 ---
 
-### 5. 📊 Dashboard (⭐ NUEVO)
-**Responsabilidad:** Vistas agregadas con capacidad de filtrado
-
-**Endpoints:**
-```
-# Organización
-GET /api/dashboard/organization/{id}                        - Dashboard general
-GET /api/dashboard/organization/{id}/filter/doctor/{docId}  - Filtrado por doctor
-GET /api/dashboard/organization/{id}/stats                  - Estadísticas rápidas
-
-# Doctor
-GET /api/dashboard/doctor/{id}                              - Dashboard general
-GET /api/dashboard/doctor/{id}/filter/patient/{patId}       - Filtrado por paciente
-GET /api/dashboard/doctor/{id}/stats                        - Estadísticas rápidas
-
-# Paciente
-GET /api/dashboard/patient/{id}                             - Dashboard completo
-GET /api/dashboard/patient/{id}/stats                       - Estadísticas rápidas
-```
-
-**Características:**
-- ✅ Dashboards con datos agregados en tiempo real
-- ✅ Filtros dinámicos (organización por doctor, doctor por paciente)
-- ✅ Estadísticas comparativas
-- ✅ Alertas de síntomas críticos
-
----
-
-### 6. 🏥 Medical Records
-**Responsabilidad:** Historiales médicos y medicaciones
-
-**Estado:** Entidades disponibles, endpoints pendientes de implementación
-
----
-
-## 🚀 Instalación y Ejecución
-
-### Prerequisitos
-
-- Java 17 o superior
-- MySQL 8.0 o superior
-- Maven 3.6+
-- IntelliJ IDEA (recomendado)
-
-### Configuración
-
-1. **Crear base de datos:**
-```sql
-CREATE DATABASE oncontrol;
-```
-
-2. **Configurar `application.properties`:**
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/oncontrol
-spring.datasource.username=root
-spring.datasource.password=yourpassword
-
-# Para crear tablas automáticamente (primera vez)
-spring.jpa.hibernate.ddl-auto=create
-
-# JWT
-authorization.jwt.secret=your-secret-key-min-256-bits
-authorization.jwt.expiration=86400000
-```
-
-3. **Ejecutar la aplicación:**
-
-**En IntelliJ:**
-- Abrir proyecto
-- Run → OncontrolBackendApplication
-
-**Por línea de comandos:**
-   ```bash
-   ./mvnw spring-boot:run
-   ```
-
-4. **Acceder a Swagger UI:**
-```
-http://localhost:8080/swagger-ui.html
-```
-
----
-
-## 📖 Documentación Disponible
-
-- 📘 **NUEVA_ARQUITECTURA.md** - Arquitectura completa del sistema
-- 📊 **DIAGRAMA_ARQUITECTURA.md** - Diagramas visuales
-- 📝 **ENDPOINTS_COMPLETOS.md** - Lista de todos los endpoints
-- 🎯 **DASHBOARDS.md** - Sistema de dashboards con filtros
-- 📚 **README_COMPLETO.md** - Guía completa de uso
-- 🔧 **RESUMEN_REESTRUCTURACION.md** - Cambios realizados
-
----
-
-## 🎯 Inicio Rápido
+## 🎯 Inicio Rápido (Ejemplos API)
 
 ### 1. Registrar Organización
 ```bash
 POST /api/auth/register/organization
-
 {
   "email": "admin@hospital.com",
   "password": "password123",
@@ -208,10 +78,9 @@ POST /api/auth/register/organization
 }
 ```
 
-### 2. Crear Doctor
+### 2. Crear Doctor (Desde Organización)
 ```bash
 POST /api/organizations/1/doctors
-
 {
   "email": "dr.garcia@hospital.com",
   "password": "password123",
@@ -222,12 +91,11 @@ POST /api/organizations/1/doctors
 }
 ```
 
-### 3. Crear Paciente
+### 3. Crear Paciente (Desde Doctor)
 ```bash
 POST /api/doctors/1/patients
-
 {
-  "email": "juan.perez@example.com",
+  "email": "juan.perez@email.com",
   "password": "password123",
   "firstName": "Juan",
   "lastName": "Pérez",
@@ -236,115 +104,79 @@ POST /api/doctors/1/patients
 }
 ```
 
-### 4. Ver Dashboard
-```bash
-# Dashboard del doctor
-GET /api/dashboard/doctor/1
+---
 
-# Dashboard filtrado por paciente
-GET /api/dashboard/doctor/1/filter/patient/1
-```
+## 🔐 Credenciales de Acceso (Demo)
+
+### 🏢 Organización (Administrador)
+- **Email**: `admin@hospital.com`
+- **Contraseña**: `password123` 
+
+### 🩺 Médicos
+- **Doctor 1**: `dr.garcia@hospital.com`
+- **Doctor 2**: `dr.rodriguez@hospital.com`
+- **Contraseña**: `password123` 
+
+### 👤 Pacientes
+- **Paciente 1**: `juan.perez@email.com`
+- **Paciente 2**: `ana.martinez@email.com`
+- **Paciente 3**: `pedro.lopez@email.com`
+- **Paciente 4**: `laura.sanchez@email.com`
+- **Contraseña**: `password123`
+
+---
+
+## 🚦 Instalación Local
+
+1. **Base de Datos:**
+   ```sql
+   CREATE DATABASE OnControlSem;
+   ```
+2. **Configuración (`application.properties`):**
+   ```properties
+   spring.datasource.url=jdbc:mysql://localhost:3306/OnControlSem
+   spring.datasource.username=tu_usuario
+   spring.datasource.password=tu_password
+   authorization.jwt.secret=tu_clave_secreta_de_256_bits
+   ```
+3. **Ejecución:**
+   ```bash
+   ./mvnw spring-boot:run
+   ```
 
 ---
 
 ## 🔐 Roles y Permisos
 
-| Rol | Descripción | Capacidades |
-|-----|-------------|-------------|
-| **ORGANIZATION** | Empresas/Hospitales | Crear doctores, ver dashboard general |
-| **DOCTOR** (Profile) | Médicos | Crear pacientes, gestionar citas, ver síntomas |
-| **PATIENT** (Profile) | Pacientes | Ver citas, reportar síntomas, ver dashboard |
-| **ADMIN** | Administrador | Gestión completa del sistema |
+| Rol | Descripción | Capacidades Clave |
+|-----|-------------|-------------------|
+| **ORGANIZATION** | Clínicas/Hospitales | Crear doctores, ver dashboard global |
+| **DOCTOR** | Médicos Oncólogos | Crear pacientes, gestionar citas, ver síntomas |
+| **PATIENT** | Pacientes | Ver citas, reportar síntomas, marcar medicación |
+| **ADMIN** | Super Administrador | Gestión técnica completa |
 
 ---
 
-## 🗄️ Base de Datos
-
-### Tablas Principales
-
-1. **users** - Organizaciones
-2. **profiles** - Datos comunes (doctores y pacientes)
-3. **doctor_profiles** - Datos específicos de doctores
-4. **patient_profiles** - Datos específicos de pacientes
-5. **appointments** - Citas médicas
-6. **symptoms** - Síntomas reportados
-7. **medical_records** - Historiales médicos
-8. **medications** - Medicaciones
+## 🗄️ Estructura de Base de Datos
+1. `users`: Datos de acceso de Organizaciones.
+2. `profiles`: Datos maestros de personas (Nombre, Email).
+3. `doctor_profiles`: Especialidad y licencias.
+4. `patient_profiles`: Historial oncológico.
+5. `appointments`: Registro de citas médicas.
+6. `symptoms`: Log de síntomas reportados.
+7. `medical_records`: Historiales clínicos.
+8. `medications`: Tratamientos farmacológicos.
 
 ---
 
 ## 🛠️ Stack Tecnológico
-
-- **Java 21**
-- **Spring Boot 3.5.6**
-- **Spring Security** (JWT)
-- **Spring Data JPA**
-- **MySQL 8.0**
+- **Java 21** & **Spring Boot 3.3.x**
+- **Spring Security + JWT**
+- **Spring Data JPA + MySQL 8.0**
 - **Swagger/OpenAPI 3.0**
-- **Lombok**
-- **BCrypt** (Password Hashing)
-- **Maven**
+- **Lombok** & **BCrypt**
+- **Maven** (Gestor de dependencias)
 
 ---
-
-## 📈 Métricas
-
-- **Total de Endpoints:** 33
-- **Total de Entidades:** 8
-- **Total de Controladores:** 7
-- **Total de Servicios:** 6
-- **Cobertura funcional:** 100%
-
----
-
-## 🤝 Contribución
-
-Este proyecto sigue Domain-Driven Design y arquitectura limpia. Cada módulo tiene:
-- **Domain Layer** - Entidades y repositorios
-- **Application Layer** - Servicios y DTOs
-- **Infrastructure Layer** - Controladores y configuración
-
----
-
-## 📝 Licencia
-
-Propiedad de OnControl - Sistema de Gestión Oncológica
-
----
-
-## 🌱 DataSeeder (Datos de Prueba)
-
-El proyecto incluye un **DataSeeder** que crea datos iniciales automáticamente:
-
-### Datos creados:
-- ✅ 1 Organización (Hospital Central)
-- ✅ 2 Doctores
-- ✅ 4 Pacientes
-- ✅ 5 Citas
-- ✅ 7 Síntomas
-
-### Credenciales de prueba:
-```
-Organización: admin@hospital.com / password123
-Doctor 1: dr.garcia@hospital.com / password123
-Doctor 2: dr.rodriguez@hospital.com / password123
-Paciente 1: juan.perez@email.com / password123
-...
-```
-
-**El seeder se ejecuta automáticamente al iniciar la app con BD vacía.**
-
-Para más información: `src/main/java/.../shared/infrastructure/seeder/README_SEEDER.md`
-
----
-
-## 📞 Soporte
-
-Para más información sobre el seeder, consulta:
-- `src/main/java/.../shared/infrastructure/seeder/README_SEEDER.md`
-
----
-
-**Versión:** 2.0  
-**Última Actualización:** Octubre 2025  
-**Estado:** ✅ Producción Ready con DataSeeder
+**Versión:** 2.0.2  
+**Estado:** ✅ Operativo y Conectado (Producción Ready)
