@@ -74,14 +74,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Permitir dominios específicos y patrones (allowCredentials funciona con patterns)
-        configuration.setAllowedOriginPatterns(Arrays.asList(
+        // Permitir dominios específicos (allowCredentials no funciona con "*")
+        configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:3000",
-            "http://localhost:3001",
-            "http://localhost:5173",
-            "https://on-control.vercel.app",
-            "https://oncontrol.vercel.app",
-            "https://oncontrol-front-sem.vercel.app",
+            "http://localhost:3001", 
+            "https://https://oncontrol-front-sem.vercel.app",
+            "https://https://oncontrol-front-sem.vercel.app",
             "https://*.vercel.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
