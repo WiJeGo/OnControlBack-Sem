@@ -81,6 +81,7 @@ public class SecurityConfig {
             "http://localhost:5173",
             "https://on-control.vercel.app",
             "https://oncontrol.vercel.app",
+            "https://oncontrol-front-sem.vercel.app",
             "https://*.vercel.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
