@@ -9,6 +9,7 @@ import com.oncontrol.oncontrolbackend.profiles.domain.repository.DoctorProfileRe
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.PatientProfileRepository;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthorizationService {
 
     private final DoctorProfileRepository doctorProfileRepository;
@@ -76,6 +78,9 @@ public class AuthorizationService {
      */
     public void requirePatientAccess(Long patientProfileId) {
         Object principal = currentPrincipal();
+        log.warn("🔎 requirePatientAccess target={} principal={} type={}", patientProfileId,
+                principal == null ? "null" : principal.getClass().getSimpleName(),
+                principal instanceof Profile p ? p.getProfileType() : "n/a");
         PatientProfile target = patientProfileRepository.findById(patientProfileId)
                 .orElseThrow(() -> new AccessDeniedException("Patient not found"));
 
@@ -99,6 +104,8 @@ public class AuthorizationService {
                 return;
             }
         }
+        log.warn("⛔ DENYING patient access: target={} principal={}", patientProfileId,
+                principal instanceof Profile pp ? pp.getId() : principal);
         throw new AccessDeniedException("You are not allowed to access this patient's data");
     }
 
