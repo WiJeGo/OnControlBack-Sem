@@ -4,6 +4,7 @@ import com.oncontrol.oncontrolbackend.appointments.application.dto.CreateAppoint
 import com.oncontrol.oncontrolbackend.appointments.application.dto.AppointmentResponse;
 import com.oncontrol.oncontrolbackend.appointments.application.service.AppointmentService;
 import com.oncontrol.oncontrolbackend.appointments.domain.model.AppointmentStatus;
+import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -28,6 +29,7 @@ import java.util.Map;
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
+    private final AuthorizationService authorizationService;
 
     @PostMapping("/doctor/{doctorProfileId}/patient/{patientProfileId}")
     @Operation(summary = "Create appointment", description = "Create an appointment between a doctor and patient")
@@ -35,6 +37,8 @@ public class AppointmentController {
             @PathVariable Long doctorProfileId,
             @PathVariable Long patientProfileId,
             @Valid @RequestBody CreateAppointmentRequest request) {
+        authorizationService.requireDoctor(doctorProfileId);
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
             AppointmentResponse appointment = appointmentService.createAppointment(doctorProfileId, patientProfileId, request);
             
@@ -54,6 +58,7 @@ public class AppointmentController {
     @GetMapping("/doctor/{doctorProfileId}")
     @Operation(summary = "Get doctor appointments", description = "Get all appointments for a doctor")
     public ResponseEntity<?> getDoctorAppointments(@PathVariable Long doctorProfileId) {
+        authorizationService.requireDoctor(doctorProfileId);
         try {
             List<AppointmentResponse> appointments = appointmentService.getAppointmentsByDoctor(doctorProfileId);
             
@@ -73,6 +78,7 @@ public class AppointmentController {
     @GetMapping("/patient/{patientProfileId}")
     @Operation(summary = "Get patient appointments", description = "Get all appointments for a patient")
     public ResponseEntity<?> getPatientAppointments(@PathVariable Long patientProfileId) {
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
             List<AppointmentResponse> appointments = appointmentService.getAppointmentsByPatient(patientProfileId);
             

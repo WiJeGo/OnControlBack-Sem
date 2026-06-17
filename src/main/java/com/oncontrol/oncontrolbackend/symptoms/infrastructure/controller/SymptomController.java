@@ -4,7 +4,8 @@ import com.oncontrol.oncontrolbackend.symptoms.application.dto.SymptomRequest;
 import com.oncontrol.oncontrolbackend.symptoms.application.dto.SymptomResponse;
 import com.oncontrol.oncontrolbackend.symptoms.application.service.SymptomService;
 import com.oncontrol.oncontrolbackend.profiles.domain.model.Profile;
-import com.oncontrol.oncontrolbackend.profiles.domain.repository.ProfileRepository;
+import com.oncontrol.oncontrolbackend.profiles.domain.repository.PatientProfileRepository;
+import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,7 +31,8 @@ import java.util.Map;
 public class SymptomController {
 
     private final SymptomService symptomService;
-    private final ProfileRepository profileRepository;
+    private final PatientProfileRepository patientProfileRepository;
+    private final AuthorizationService authorizationService;
 
     @PostMapping("/patient/{patientProfileId}")
     @Operation(summary = "Report symptom", description = "Patient reports a symptom")
@@ -39,10 +41,11 @@ public class SymptomController {
             @Valid @RequestBody SymptomRequest request) {
         log.info("🔵 POST /api/symptoms/patient/{} - Request received", patientProfileId);
         log.info("🔵 Request body: {}", request);
-        
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
-            Profile patientProfile = profileRepository.findById(patientProfileId)
-                    .orElseThrow(() -> new RuntimeException("Patient profile not found"));
+            Profile patientProfile = patientProfileRepository.findById(patientProfileId)
+                    .orElseThrow(() -> new RuntimeException("Patient profile not found"))
+                    .getProfile();
             
             log.info("✅ Patient profile found: {}", patientProfile.getFullName());
 
@@ -68,9 +71,11 @@ public class SymptomController {
             @PathVariable Long patientProfileId,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate) {
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
-            Profile patientProfile = profileRepository.findById(patientProfileId)
-                    .orElseThrow(() -> new RuntimeException("Patient profile not found"));
+            Profile patientProfile = patientProfileRepository.findById(patientProfileId)
+                    .orElseThrow(() -> new RuntimeException("Patient profile not found"))
+                    .getProfile();
 
             List<SymptomResponse> symptoms = symptomService.getPatientSymptoms(patientProfile, startDate, endDate);
             
@@ -92,9 +97,11 @@ public class SymptomController {
     public ResponseEntity<?> getRecentSymptoms(
             @PathVariable Long patientProfileId,
             @RequestParam(defaultValue = "7") int days) {
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
-            Profile patientProfile = profileRepository.findById(patientProfileId)
-                    .orElseThrow(() -> new RuntimeException("Patient profile not found"));
+            Profile patientProfile = patientProfileRepository.findById(patientProfileId)
+                    .orElseThrow(() -> new RuntimeException("Patient profile not found"))
+                    .getProfile();
 
             List<SymptomResponse> symptoms = symptomService.getRecentSymptoms(patientProfile, days);
             
@@ -115,9 +122,11 @@ public class SymptomController {
     @GetMapping("/patient/{patientProfileId}/stats")
     @Operation(summary = "Get symptom statistics", description = "Get statistics about patient symptoms")
     public ResponseEntity<?> getSymptomStats(@PathVariable Long patientProfileId) {
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
-            Profile patientProfile = profileRepository.findById(patientProfileId)
-                    .orElseThrow(() -> new RuntimeException("Patient profile not found"));
+            Profile patientProfile = patientProfileRepository.findById(patientProfileId)
+                    .orElseThrow(() -> new RuntimeException("Patient profile not found"))
+                    .getProfile();
 
             Map<String, Object> stats = symptomService.getSymptomStats(patientProfile);
             

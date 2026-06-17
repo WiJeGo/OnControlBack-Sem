@@ -3,6 +3,7 @@ package com.oncontrol.oncontrolbackend.medicalrecords.infrastructure.controller;
 import com.oncontrol.oncontrolbackend.medicalrecords.application.dto.*;
 import com.oncontrol.oncontrolbackend.medicalrecords.application.service.MedicalHistoryService;
 import com.oncontrol.oncontrolbackend.medicalrecords.domain.model.HistoryEntryType;
+import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,6 +25,7 @@ import java.util.Map;
 public class MedicalHistoryController {
 
     private final MedicalHistoryService medicalHistoryService;
+    private final AuthorizationService authorizationService;
 
     @PostMapping("/patient/{patientProfileId}")
     @Operation(summary = "Add history entry", description = "Add a new medical history entry")
@@ -31,6 +33,7 @@ public class MedicalHistoryController {
             @PathVariable Long patientProfileId,
             @RequestParam(required = false) Long doctorProfileId,
             @Valid @RequestBody CreateHistoryEntryRequest request) {
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
             HistoryEntryResponse response = medicalHistoryService.createHistoryEntry(
                     patientProfileId, doctorProfileId, request);
@@ -45,6 +48,7 @@ public class MedicalHistoryController {
     @GetMapping("/patient/{patientProfileId}")
     @Operation(summary = "Get medical history", description = "Get complete medical history for a patient")
     public ResponseEntity<Map<String, Object>> getPatientHistory(@PathVariable Long patientProfileId) {
+        authorizationService.requirePatientAccess(patientProfileId);
         List<HistoryEntryResponse> entries = medicalHistoryService.getPatientHistory(patientProfileId);
         
         Map<String, Object> response = new HashMap<>();
@@ -59,6 +63,7 @@ public class MedicalHistoryController {
     public ResponseEntity<Map<String, Object>> getPatientHistoryByType(
             @PathVariable Long patientProfileId,
             @PathVariable HistoryEntryType type) {
+        authorizationService.requirePatientAccess(patientProfileId);
         List<HistoryEntryResponse> entries = medicalHistoryService.getPatientHistoryByType(patientProfileId, type);
         
         Map<String, Object> response = new HashMap<>();
@@ -75,6 +80,7 @@ public class MedicalHistoryController {
             @PathVariable Long patientProfileId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        authorizationService.requirePatientAccess(patientProfileId);
         List<HistoryEntryResponse> entries = medicalHistoryService.getPatientHistoryByDateRange(
                 patientProfileId, startDate, endDate);
         
@@ -92,6 +98,7 @@ public class MedicalHistoryController {
     public ResponseEntity<?> createAllergy(
             @PathVariable Long patientProfileId,
             @Valid @RequestBody CreateAllergyRequest request) {
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
             AllergyResponse response = medicalHistoryService.createAllergy(patientProfileId, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -105,6 +112,7 @@ public class MedicalHistoryController {
     @GetMapping("/patient/{patientProfileId}/allergies")
     @Operation(summary = "Get allergies", description = "Get all allergies for a patient")
     public ResponseEntity<Map<String, Object>> getPatientAllergies(@PathVariable Long patientProfileId) {
+        authorizationService.requirePatientAccess(patientProfileId);
         List<AllergyResponse> allergies = medicalHistoryService.getPatientAllergies(patientProfileId);
         
         Map<String, Object> response = new HashMap<>();

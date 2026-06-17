@@ -12,6 +12,8 @@ import com.oncontrol.oncontrolbackend.profiles.application.dto.PatientProfileRes
 import com.oncontrol.oncontrolbackend.profiles.application.service.ProfileService;
 import com.oncontrol.oncontrolbackend.profiles.domain.model.Profile;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.ProfileRepository;
+import com.oncontrol.oncontrolbackend.profiles.domain.repository.DoctorProfileRepository;
+import com.oncontrol.oncontrolbackend.profiles.domain.repository.PatientProfileRepository;
 import com.oncontrol.oncontrolbackend.symptoms.domain.model.Symptom;
 import com.oncontrol.oncontrolbackend.symptoms.domain.model.SymptomSeverity;
 import com.oncontrol.oncontrolbackend.symptoms.domain.repository.SymptomRepository;
@@ -38,8 +40,20 @@ public class DashboardService {
     private final ProfileService profileService;
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
+    private final DoctorProfileRepository doctorProfileRepository;
+    private final PatientProfileRepository patientProfileRepository;
     private final AppointmentRepository appointmentRepository;
     private final SymptomRepository symptomRepository;
+
+    /** Resolve a DoctorProfile.id (external/API id) to its underlying Profile, or null. */
+    private Profile doctorProfileToProfile(Long doctorProfileId) {
+        return doctorProfileRepository.findById(doctorProfileId).map(dp -> dp.getProfile()).orElse(null);
+    }
+
+    /** Resolve a PatientProfile.id (external/API id) to its underlying Profile, or null. */
+    private Profile patientProfileToProfile(Long patientProfileId) {
+        return patientProfileRepository.findById(patientProfileId).map(pp -> pp.getProfile()).orElse(null);
+    }
 
     /**
      * Get Organization Dashboard (general or filtered by doctor)
@@ -137,10 +151,15 @@ public class DashboardService {
         int totalPatients = patients.size();
         int activePatients = (int) patients.stream().filter(PatientProfileResponse::getIsActive).count();
         
-        // Get appointments
-        List<Appointment> allAppointments = filterByPatientId != null 
-                ? appointmentRepository.findByPatientId(filterByPatientId)
-                : appointmentRepository.findByDoctorId(doctorProfileId);
+        // Get appointments (resolve external DoctorProfile.id/PatientProfile.id to the underlying Profile.id)
+        List<Appointment> allAppointments;
+        if (filterByPatientId != null) {
+            Profile fp = patientProfileToProfile(filterByPatientId);
+            allAppointments = fp != null ? appointmentRepository.findByPatientId(fp.getId()) : new ArrayList<>();
+        } else {
+            Profile dp = doctorProfileToProfile(doctorProfileId);
+            allAppointments = dp != null ? appointmentRepository.findByDoctorId(dp.getId()) : new ArrayList<>();
+        }
         
         int totalAppointments = allAppointments.size();
         List<Appointment> upcoming = allAppointments.stream()
@@ -155,7 +174,7 @@ public class DashboardService {
         
         // Get symptoms
         List<Profile> patientProfiles = patients.stream()
-                .map(p -> profileRepository.findById(p.getId()).orElse(null))
+                .map(p -> patientProfileToProfile(p.getId()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         
@@ -181,13 +200,15 @@ public class DashboardService {
         // Build patient statistics
         Map<Long, DoctorDashboardResponse.PatientStatistics> patientStats = new HashMap<>();
         for (PatientProfileResponse patient : patients) {
-            List<Appointment> patientAppts = appointmentRepository.findByPatientId(patient.getId());
+            Profile patientProfile = patientProfileToProfile(patient.getId());
+            List<Appointment> patientAppts = patientProfile != null
+                    ? appointmentRepository.findByPatientId(patientProfile.getId())
+                    : new ArrayList<>();
             List<Appointment> patientUpcoming = patientAppts.stream()
                     .filter(a -> a.getAppointmentDate().isAfter(LocalDateTime.now()))
                     .sorted(Comparator.comparing(Appointment::getAppointmentDate))
                     .collect(Collectors.toList());
-            
-            Profile patientProfile = profileRepository.findById(patient.getId()).orElse(null);
+
             int symptomsLastMonth = 0;
             int criticalSymptomsCount = 0;
             
@@ -257,11 +278,12 @@ public class DashboardService {
         PatientProfileResponse patient = profileService.getPatientProfileById(patientProfileId);
         DoctorProfileResponse doctor = profileService.getDoctorProfileById(patient.getDoctorProfileId());
         
-        Profile patientProfile = profileRepository.findById(patientProfileId)
-                .orElseThrow(() -> new RuntimeException("Patient profile not found"));
-        
+        Profile patientProfile = patientProfileRepository.findById(patientProfileId)
+                .orElseThrow(() -> new RuntimeException("Patient profile not found"))
+                .getProfile();
+
         // Get appointments
-        List<Appointment> allAppointments = appointmentRepository.findByPatientId(patientProfileId);
+        List<Appointment> allAppointments = appointmentRepository.findByPatientId(patientProfile.getId());
         List<Appointment> upcoming = allAppointments.stream()
                 .filter(a -> a.getAppointmentDate().isAfter(LocalDateTime.now()))
                 .filter(a -> a.getStatus() == AppointmentStatus.SCHEDULED || a.getStatus() == AppointmentStatus.CONFIRMED)

@@ -2,6 +2,7 @@ package com.oncontrol.oncontrolbackend.medicalrecords.infrastructure.controller;
 
 import com.oncontrol.oncontrolbackend.medicalrecords.application.dto.*;
 import com.oncontrol.oncontrolbackend.medicalrecords.application.service.MedicationService;
+import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,6 +22,7 @@ import java.util.Map;
 public class MedicationController {
 
     private final MedicationService medicationService;
+    private final AuthorizationService authorizationService;
 
     @PostMapping("/doctor/{doctorProfileId}/patient/{patientProfileId}")
     @Operation(summary = "Prescribe medication", description = "Create a new medication prescription")
@@ -28,6 +30,8 @@ public class MedicationController {
             @PathVariable Long doctorProfileId,
             @PathVariable Long patientProfileId,
             @Valid @RequestBody CreateMedicationRequest request) {
+        authorizationService.requireDoctor(doctorProfileId);
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
             MedicationResponse response = medicationService.createMedication(doctorProfileId, patientProfileId, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -54,6 +58,7 @@ public class MedicationController {
     @GetMapping("/patient/{patientProfileId}")
     @Operation(summary = "Get patient medications", description = "Get all medications for a patient")
     public ResponseEntity<Map<String, Object>> getPatientMedications(@PathVariable Long patientProfileId) {
+        authorizationService.requirePatientAccess(patientProfileId);
         List<MedicationResponse> medications = medicationService.getMedicationsByPatient(patientProfileId);
         
         Map<String, Object> response = new HashMap<>();
@@ -66,6 +71,7 @@ public class MedicationController {
     @GetMapping("/patient/{patientProfileId}/active")
     @Operation(summary = "Get active medications", description = "Get active medications for a patient")
     public ResponseEntity<Map<String, Object>> getActiveMedications(@PathVariable Long patientProfileId) {
+        authorizationService.requirePatientAccess(patientProfileId);
         List<MedicationResponse> medications = medicationService.getActiveMedicationsByPatient(patientProfileId);
         
         Map<String, Object> response = new HashMap<>();
@@ -78,6 +84,7 @@ public class MedicationController {
     @GetMapping("/doctor/{doctorProfileId}")
     @Operation(summary = "Get doctor medications", description = "Get medications prescribed by a doctor")
     public ResponseEntity<Map<String, Object>> getDoctorMedications(@PathVariable Long doctorProfileId) {
+        authorizationService.requireDoctor(doctorProfileId);
         List<MedicationResponse> medications = medicationService.getMedicationsByDoctor(doctorProfileId);
         
         Map<String, Object> response = new HashMap<>();
@@ -122,6 +129,7 @@ public class MedicationController {
     public ResponseEntity<Map<String, Object>> getUpcomingDoses(
             @PathVariable Long patientProfileId,
             @RequestParam(required = false, defaultValue = "7") Integer days) {
+        authorizationService.requirePatientAccess(patientProfileId);
         List<UpcomingDoseResponse> doses = medicationService.getUpcomingDoses(patientProfileId, days);
         
         Map<String, Object> response = new HashMap<>();

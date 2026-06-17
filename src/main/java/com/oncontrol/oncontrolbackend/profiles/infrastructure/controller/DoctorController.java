@@ -8,6 +8,8 @@ import com.oncontrol.oncontrolbackend.symptoms.application.service.SymptomServic
 import com.oncontrol.oncontrolbackend.symptoms.application.dto.SymptomResponse;
 import com.oncontrol.oncontrolbackend.profiles.domain.model.Profile;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.ProfileRepository;
+import com.oncontrol.oncontrolbackend.profiles.domain.repository.PatientProfileRepository;
+import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -35,12 +37,15 @@ public class DoctorController {
     private final AppointmentService appointmentService;
     private final SymptomService symptomService;
     private final ProfileRepository profileRepository;
+    private final PatientProfileRepository patientProfileRepository;
+    private final AuthorizationService authorizationService;
 
     @PostMapping("/{doctorProfileId}/patients")
     @Operation(summary = "Create patient", description = "Doctor creates a new patient")
     public ResponseEntity<?> createPatient(
             @PathVariable Long doctorProfileId,
             @Valid @RequestBody CreatePatientRequest request) {
+        authorizationService.requireDoctor(doctorProfileId);
         try {
             PatientProfileResponse patient = profileService.createPatient(doctorProfileId, request);
             
@@ -64,6 +69,7 @@ public class DoctorController {
     @GetMapping("/{doctorProfileId}/patients")
     @Operation(summary = "Get doctor patients", description = "Get all patients belonging to a doctor")
     public ResponseEntity<?> getPatients(@PathVariable Long doctorProfileId) {
+        authorizationService.requireDoctor(doctorProfileId);
         try {
             List<PatientProfileResponse> patients = profileService.getPatientsByDoctorId(doctorProfileId);
             
@@ -83,6 +89,7 @@ public class DoctorController {
     @GetMapping("/{doctorProfileId}/patients/{patientId}")
     @Operation(summary = "Get patient by ID", description = "Get a specific patient by ID")
     public ResponseEntity<?> getPatientById(@PathVariable Long doctorProfileId, @PathVariable Long patientId) {
+        authorizationService.requireDoctor(doctorProfileId);
         try {
             PatientProfileResponse patient = profileService.getPatientProfileById(patientId);
             
@@ -107,9 +114,12 @@ public class DoctorController {
     public ResponseEntity<?> getPatientSymptoms(
             @PathVariable Long doctorProfileId,
             @PathVariable Long patientId) {
+        authorizationService.requireDoctor(doctorProfileId);
+        authorizationService.requirePatientAccess(patientId);
         try {
-            Profile patientProfile = profileRepository.findById(patientId)
-                    .orElseThrow(() -> new RuntimeException("Patient profile not found"));
+            Profile patientProfile = patientProfileRepository.findById(patientId)
+                    .orElseThrow(() -> new RuntimeException("Patient profile not found"))
+                    .getProfile();
 
             List<SymptomResponse> symptoms = symptomService.getPatientSymptoms(patientProfile, null, null);
             
@@ -131,6 +141,7 @@ public class DoctorController {
     @GetMapping("/{doctorProfileId}/dashboard")
     @Operation(summary = "Get doctor dashboard", description = "Get doctor dashboard with all patients and appointments")
     public ResponseEntity<?> getDoctorDashboard(@PathVariable Long doctorProfileId) {
+        authorizationService.requireDoctor(doctorProfileId);
         try {
             // Get all patients
             List<PatientProfileResponse> patients = profileService.getPatientsByDoctorId(doctorProfileId);

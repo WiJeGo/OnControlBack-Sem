@@ -7,6 +7,8 @@ import com.oncontrol.oncontrolbackend.appointments.domain.model.AppointmentStatu
 import com.oncontrol.oncontrolbackend.appointments.domain.repository.AppointmentRepository;
 import com.oncontrol.oncontrolbackend.profiles.domain.model.Profile;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.ProfileRepository;
+import com.oncontrol.oncontrolbackend.profiles.domain.repository.DoctorProfileRepository;
+import com.oncontrol.oncontrolbackend.profiles.domain.repository.PatientProfileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,22 @@ public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final ProfileRepository profileRepository;
+    private final DoctorProfileRepository doctorProfileRepository;
+    private final PatientProfileRepository patientProfileRepository;
+
+    /** Resolve a DoctorProfile.id (used by the API/frontend) to its underlying Profile. */
+    private Profile resolveDoctorProfile(Long doctorProfileId) {
+        return doctorProfileRepository.findById(doctorProfileId)
+                .orElseThrow(() -> new RuntimeException("Doctor profile not found"))
+                .getProfile();
+    }
+
+    /** Resolve a PatientProfile.id (used by the API/frontend) to its underlying Profile. */
+    private Profile resolvePatientProfile(Long patientProfileId) {
+        return patientProfileRepository.findById(patientProfileId)
+                .orElseThrow(() -> new RuntimeException("Patient profile not found"))
+                .getProfile();
+    }
 
     /**
      * Create appointment (can be called by doctor or patient)
@@ -30,11 +48,8 @@ public class AppointmentService {
     public AppointmentResponse createAppointment(Long doctorProfileId, Long patientProfileId, CreateAppointmentRequest request) {
         log.info("Creating appointment between doctor {} and patient {}", doctorProfileId, patientProfileId);
 
-        Profile doctorProfile = profileRepository.findById(doctorProfileId)
-                .orElseThrow(() -> new RuntimeException("Doctor profile not found"));
-
-        Profile patientProfile = profileRepository.findById(patientProfileId)
-                .orElseThrow(() -> new RuntimeException("Patient profile not found"));
+        Profile doctorProfile = resolveDoctorProfile(doctorProfileId);
+        Profile patientProfile = resolvePatientProfile(patientProfileId);
 
         Appointment appointment = Appointment.builder()
                 .doctor(doctorProfile)
@@ -60,7 +75,8 @@ public class AppointmentService {
      */
     @Transactional(readOnly = true)
     public List<AppointmentResponse> getAppointmentsByDoctor(Long doctorProfileId) {
-        return appointmentRepository.findByDoctorId(doctorProfileId).stream()
+        Long doctorProfilePk = resolveDoctorProfile(doctorProfileId).getId();
+        return appointmentRepository.findByDoctorId(doctorProfilePk).stream()
                 .map(this::mapToAppointmentResponse)
                 .collect(Collectors.toList());
     }
@@ -70,7 +86,8 @@ public class AppointmentService {
      */
     @Transactional(readOnly = true)
     public List<AppointmentResponse> getAppointmentsByPatient(Long patientProfileId) {
-        return appointmentRepository.findByPatientId(patientProfileId).stream()
+        Long patientProfilePk = resolvePatientProfile(patientProfileId).getId();
+        return appointmentRepository.findByPatientId(patientProfilePk).stream()
                 .map(this::mapToAppointmentResponse)
                 .collect(Collectors.toList());
     }

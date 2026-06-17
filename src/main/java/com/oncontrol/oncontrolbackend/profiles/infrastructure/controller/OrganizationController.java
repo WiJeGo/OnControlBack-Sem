@@ -3,6 +3,7 @@ package com.oncontrol.oncontrolbackend.profiles.infrastructure.controller;
 import com.oncontrol.oncontrolbackend.profiles.application.dto.CreateDoctorRequest;
 import com.oncontrol.oncontrolbackend.profiles.application.dto.DoctorProfileResponse;
 import com.oncontrol.oncontrolbackend.profiles.application.service.ProfileService;
+import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,12 +26,14 @@ import java.util.Map;
 public class OrganizationController {
 
     private final ProfileService profileService;
+    private final AuthorizationService authorizationService;
 
     @PostMapping("/{organizationId}/doctors")
     @Operation(summary = "Create doctor", description = "Organization creates a new doctor")
     public ResponseEntity<?> createDoctor(
             @PathVariable Long organizationId,
             @Valid @RequestBody CreateDoctorRequest request) {
+        authorizationService.requireOrganization(organizationId);
         try {
             DoctorProfileResponse doctor = profileService.createDoctor(organizationId, request);
             
@@ -53,6 +56,7 @@ public class OrganizationController {
     @GetMapping("/{organizationId}/doctors")
     @Operation(summary = "Get organization doctors", description = "Get all doctors belonging to an organization")
     public ResponseEntity<?> getDoctors(@PathVariable Long organizationId) {
+        authorizationService.requireOrganization(organizationId);
         try {
             List<DoctorProfileResponse> doctors = profileService.getDoctorsByOrganizationId(organizationId);
             
@@ -71,6 +75,7 @@ public class OrganizationController {
     @GetMapping("/{organizationId}/doctors/{doctorId}")
     @Operation(summary = "Get doctor by ID", description = "Get a specific doctor by ID")
     public ResponseEntity<?> getDoctorById(@PathVariable Long organizationId, @PathVariable Long doctorId) {
+        authorizationService.requireOrganization(organizationId);
         try {
             DoctorProfileResponse doctor = profileService.getDoctorProfileById(doctorId);
             
@@ -92,6 +97,7 @@ public class OrganizationController {
     @GetMapping("/{organizationId}/dashboard")
     @Operation(summary = "Get organization dashboard", description = "Get organization dashboard with all doctors and statistics")
     public ResponseEntity<?> getOrganizationDashboard(@PathVariable Long organizationId) {
+        authorizationService.requireOrganization(organizationId);
         try {
             List<DoctorProfileResponse> doctors = profileService.getDoctorsByOrganizationId(organizationId);
             

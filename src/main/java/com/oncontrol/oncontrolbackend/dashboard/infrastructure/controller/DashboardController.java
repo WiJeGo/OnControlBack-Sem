@@ -2,6 +2,7 @@ package com.oncontrol.oncontrolbackend.dashboard.infrastructure.controller;
 
 import com.oncontrol.oncontrolbackend.dashboard.application.dto.*;
 import com.oncontrol.oncontrolbackend.dashboard.application.service.DashboardService;
+import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,6 +30,7 @@ import java.util.Map;
 public class DashboardController {
 
     private final DashboardService dashboardService;
+    private final AuthorizationService authorizationService;
 
     // ========== ORGANIZATION DASHBOARDS ==========
 
@@ -40,6 +42,7 @@ public class DashboardController {
     public ResponseEntity<?> getOrganizationDashboard(
             @Parameter(description = "Organization ID") 
             @PathVariable Long organizationId) {
+        authorizationService.requireOrganization(organizationId);
         try {
             OrganizationDashboardResponse dashboard = dashboardService.getOrganizationDashboard(organizationId, null);
             return ResponseEntity.ok(dashboard);
@@ -59,8 +62,9 @@ public class DashboardController {
     public ResponseEntity<?> getOrganizationDashboardFilteredByDoctor(
             @Parameter(description = "Organization ID") 
             @PathVariable Long organizationId,
-            @Parameter(description = "Doctor ID to filter by") 
+            @Parameter(description = "Doctor ID to filter by")
             @PathVariable Long doctorId) {
+        authorizationService.requireOrganization(organizationId);
         try {
             OrganizationDashboardResponse dashboard = dashboardService.getOrganizationDashboard(organizationId, doctorId);
             return ResponseEntity.ok(dashboard);
@@ -82,6 +86,7 @@ public class DashboardController {
     public ResponseEntity<?> getDoctorDashboard(
             @Parameter(description = "Doctor Profile ID") 
             @PathVariable Long doctorProfileId) {
+        authorizationService.requireDoctor(doctorProfileId);
         try {
             DoctorDashboardResponse dashboard = dashboardService.getDoctorDashboard(doctorProfileId, null);
             return ResponseEntity.ok(dashboard);
@@ -101,8 +106,9 @@ public class DashboardController {
     public ResponseEntity<?> getDoctorDashboardFilteredByPatient(
             @Parameter(description = "Doctor Profile ID") 
             @PathVariable Long doctorProfileId,
-            @Parameter(description = "Patient ID to filter by") 
+            @Parameter(description = "Patient ID to filter by")
             @PathVariable Long patientId) {
+        authorizationService.requireDoctor(doctorProfileId);
         try {
             DoctorDashboardResponse dashboard = dashboardService.getDoctorDashboard(doctorProfileId, patientId);
             return ResponseEntity.ok(dashboard);
@@ -124,6 +130,7 @@ public class DashboardController {
     public ResponseEntity<?> getPatientDashboard(
             @Parameter(description = "Patient Profile ID") 
             @PathVariable Long patientProfileId) {
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
             PatientDashboardResponse dashboard = dashboardService.getPatientDashboard(patientProfileId);
             return ResponseEntity.ok(dashboard);
@@ -143,6 +150,7 @@ public class DashboardController {
         description = "Get quick statistics for organization"
     )
     public ResponseEntity<?> getOrganizationStats(@PathVariable Long organizationId) {
+        authorizationService.requireOrganization(organizationId);
         try {
             OrganizationDashboardResponse dashboard = dashboardService.getOrganizationDashboard(organizationId, null);
             
@@ -169,6 +177,7 @@ public class DashboardController {
         description = "Get quick statistics for doctor"
     )
     public ResponseEntity<?> getDoctorStats(@PathVariable Long doctorProfileId) {
+        authorizationService.requireDoctor(doctorProfileId);
         try {
             DoctorDashboardResponse dashboard = dashboardService.getDoctorDashboard(doctorProfileId, null);
             
@@ -196,6 +205,7 @@ public class DashboardController {
         description = "Get quick statistics for patient"
     )
     public ResponseEntity<?> getPatientStats(@PathVariable Long patientProfileId) {
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
             PatientDashboardResponse dashboard = dashboardService.getPatientDashboard(patientProfileId);
             

@@ -4,7 +4,8 @@ import com.oncontrol.oncontrolbackend.appointments.application.service.Appointme
 import com.oncontrol.oncontrolbackend.symptoms.application.service.SymptomService;
 import com.oncontrol.oncontrolbackend.symptoms.application.dto.SymptomResponse;
 import com.oncontrol.oncontrolbackend.profiles.domain.model.Profile;
-import com.oncontrol.oncontrolbackend.profiles.domain.repository.ProfileRepository;
+import com.oncontrol.oncontrolbackend.profiles.domain.repository.PatientProfileRepository;
+import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -28,14 +29,17 @@ public class PatientController {
 
     private final AppointmentService appointmentService;
     private final SymptomService symptomService;
-    private final ProfileRepository profileRepository;
+    private final PatientProfileRepository patientProfileRepository;
+    private final AuthorizationService authorizationService;
 
     @GetMapping("/{patientProfileId}/dashboard")
     @Operation(summary = "Get patient dashboard", description = "Get all patient data: appointments, symptoms, stats")
     public ResponseEntity<?> getPatientDashboard(@PathVariable Long patientProfileId) {
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
-            Profile patientProfile = profileRepository.findById(patientProfileId)
-                    .orElseThrow(() -> new RuntimeException("Patient profile not found"));
+            Profile patientProfile = patientProfileRepository.findById(patientProfileId)
+                    .orElseThrow(() -> new RuntimeException("Patient profile not found"))
+                    .getProfile();
 
             // Get appointments
             var appointments = appointmentService.getAppointmentsByPatient(patientProfileId);
@@ -73,9 +77,11 @@ public class PatientController {
     @GetMapping("/{patientProfileId}/summary")
     @Operation(summary = "Get patient summary", description = "Get quick summary of patient status")
     public ResponseEntity<?> getPatientSummary(@PathVariable Long patientProfileId) {
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
-            Profile patientProfile = profileRepository.findById(patientProfileId)
-                    .orElseThrow(() -> new RuntimeException("Patient profile not found"));
+            Profile patientProfile = patientProfileRepository.findById(patientProfileId)
+                    .orElseThrow(() -> new RuntimeException("Patient profile not found"))
+                    .getProfile();
 
             var appointments = appointmentService.getAppointmentsByPatient(patientProfileId);
             var recentSymptoms = symptomService.getRecentSymptoms(patientProfile, 7);

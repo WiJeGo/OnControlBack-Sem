@@ -2,6 +2,7 @@ package com.oncontrol.oncontrolbackend.treatments.infrastructure.controller;
 
 import com.oncontrol.oncontrolbackend.treatments.application.dto.*;
 import com.oncontrol.oncontrolbackend.treatments.application.service.TreatmentService;
+import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,6 +22,7 @@ import java.util.Map;
 public class TreatmentController {
 
     private final TreatmentService treatmentService;
+    private final AuthorizationService authorizationService;
 
     @PostMapping("/doctor/{doctorProfileId}/patient/{patientProfileId}")
     @Operation(summary = "Create treatment", description = "Create a new treatment for a patient")
@@ -28,6 +30,8 @@ public class TreatmentController {
             @PathVariable Long doctorProfileId,
             @PathVariable Long patientProfileId,
             @Valid @RequestBody CreateTreatmentRequest request) {
+        authorizationService.requireDoctor(doctorProfileId);
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
             TreatmentResponse response = treatmentService.createTreatment(doctorProfileId, patientProfileId, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -54,6 +58,7 @@ public class TreatmentController {
     @GetMapping("/doctor/{doctorProfileId}")
     @Operation(summary = "Get doctor treatments", description = "Get all treatments for a doctor")
     public ResponseEntity<Map<String, Object>> getDoctorTreatments(@PathVariable Long doctorProfileId) {
+        authorizationService.requireDoctor(doctorProfileId);
         List<TreatmentResponse> treatments = treatmentService.getTreatmentsByDoctor(doctorProfileId);
         
         Map<String, Object> response = new HashMap<>();
@@ -66,6 +71,7 @@ public class TreatmentController {
     @GetMapping("/patient/{patientProfileId}")
     @Operation(summary = "Get patient treatments", description = "Get all treatments for a patient")
     public ResponseEntity<Map<String, Object>> getPatientTreatments(@PathVariable Long patientProfileId) {
+        authorizationService.requirePatientAccess(patientProfileId);
         List<TreatmentResponse> treatments = treatmentService.getTreatmentsByPatient(patientProfileId);
         
         Map<String, Object> response = new HashMap<>();
@@ -78,6 +84,7 @@ public class TreatmentController {
     @GetMapping("/patient/{patientProfileId}/current")
     @Operation(summary = "Get current treatment", description = "Get current active treatment for a patient")
     public ResponseEntity<?> getCurrentTreatment(@PathVariable Long patientProfileId) {
+        authorizationService.requirePatientAccess(patientProfileId);
         try {
             TreatmentResponse response = treatmentService.getCurrentTreatmentByPatient(patientProfileId);
             return ResponseEntity.ok(response);
@@ -148,6 +155,7 @@ public class TreatmentController {
     @GetMapping("/patient/{patientProfileId}/sessions/upcoming")
     @Operation(summary = "Get upcoming sessions", description = "Get upcoming sessions for a patient")
     public ResponseEntity<Map<String, Object>> getUpcomingSessions(@PathVariable Long patientProfileId) {
+        authorizationService.requirePatientAccess(patientProfileId);
         List<TreatmentSessionResponse> sessions = treatmentService.getUpcomingSessionsByPatient(patientProfileId);
         
         Map<String, Object> response = new HashMap<>();
@@ -160,6 +168,7 @@ public class TreatmentController {
     @GetMapping("/doctor/{doctorProfileId}/stats")
     @Operation(summary = "Get treatment statistics", description = "Get treatment statistics for a doctor")
     public ResponseEntity<TreatmentStatsResponse> getTreatmentStats(@PathVariable Long doctorProfileId) {
+        authorizationService.requireDoctor(doctorProfileId);
         TreatmentStatsResponse stats = treatmentService.getTreatmentStats(doctorProfileId);
         return ResponseEntity.ok(stats);
     }
