@@ -5,6 +5,7 @@ import com.oncontrol.oncontrolbackend.appointments.application.dto.AppointmentRe
 import com.oncontrol.oncontrolbackend.appointments.application.service.AppointmentService;
 import com.oncontrol.oncontrolbackend.appointments.domain.model.AppointmentStatus;
 import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
+import org.springframework.security.access.AccessDeniedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -47,6 +48,8 @@ public class AppointmentController {
             response.put("message", "Appointment created successfully");
             
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (AccessDeniedException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Error creating appointment", e);
             Map<String, String> errorResponse = new HashMap<>();
@@ -67,6 +70,8 @@ public class AppointmentController {
             response.put("count", appointments.size());
             
             return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Error retrieving doctor appointments", e);
             Map<String, String> errorResponse = new HashMap<>();
@@ -87,6 +92,8 @@ public class AppointmentController {
             response.put("count", appointments.size());
             
             return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Error retrieving patient appointments", e);
             Map<String, String> errorResponse = new HashMap<>();
@@ -101,6 +108,8 @@ public class AppointmentController {
         try {
             AppointmentResponse appointment = appointmentService.getAppointmentById(id);
             return ResponseEntity.ok(appointment);
+        } catch (AccessDeniedException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Error retrieving appointment", e);
             Map<String, String> errorResponse = new HashMap<>();
@@ -123,6 +132,8 @@ public class AppointmentController {
             response.put("message", "Appointment status updated successfully");
             
             return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Error updating appointment status", e);
             Map<String, String> errorResponse = new HashMap<>();
@@ -145,6 +156,8 @@ public class AppointmentController {
             response.put("message", "Follow-up notes added successfully");
             
             return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Error adding follow-up notes", e);
             Map<String, String> errorResponse = new HashMap<>();
@@ -176,6 +189,8 @@ public class AppointmentController {
             response.put("message", "Appointment rescheduled successfully");
             
             return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Error rescheduling appointment", e);
             Map<String, String> errorResponse = new HashMap<>();

@@ -17,7 +17,7 @@ import java.time.LocalTime;
 public class CreateMedicationRequest {
 
     @NotBlank(message = "Medication name is required")
-    private String medicationName;
+    private String name;
 
     @NotBlank(message = "Dosage is required")
     private String dosage;

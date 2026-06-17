@@ -45,7 +45,7 @@ public class MedicationService {
         Medication medication = Medication.builder()
                 .patient(patient)
                 .prescribedBy(doctor)
-                .medicationName(request.getMedicationName())
+                .medicationName(request.getName())
                 .dosage(request.getDosage())
                 .frequency(request.getFrequency())
                 .route(request.getRoute())
