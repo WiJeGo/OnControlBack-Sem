@@ -32,11 +32,11 @@ public class OpenApiConfiguration {
                                 .url("https://opensource.org/licenses/MIT")))
                 .servers(List.of(
                         new Server()
-                                .url("http://localhost:8080")
-                                .description("Development Server"),
+                                .url("https://oncontrol-backend-api.onrender.com")
+                                .description("Production (Render)"),
                         new Server()
-                                .url("https://api.oncontrol.com")
-                                .description("Production Server")
+                                .url("http://localhost:8081")
+                                .description("Local development")
                 ))
                 .addSecurityItem(new SecurityRequirement()
                         .addList("Bearer Authentication"))
