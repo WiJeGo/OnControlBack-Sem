@@ -9,6 +9,7 @@ import com.oncontrol.oncontrolbackend.profiles.domain.model.Profile;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.ProfileRepository;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.DoctorProfileRepository;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.PatientProfileRepository;
+import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class AppointmentService {
     private final ProfileRepository profileRepository;
     private final DoctorProfileRepository doctorProfileRepository;
     private final PatientProfileRepository patientProfileRepository;
+    private final AuthorizationService authorizationService;
 
     /** Resolve a DoctorProfile.id (used by the API/frontend) to its underlying Profile. */
     private Profile resolveDoctorProfile(Long doctorProfileId) {
@@ -99,6 +101,7 @@ public class AppointmentService {
     public AppointmentResponse getAppointmentById(Long id) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        authorizationService.requireProfileOwnership(appointment.getDoctor().getId(), appointment.getPatient().getId());
         return mapToAppointmentResponse(appointment);
     }
 
@@ -108,6 +111,7 @@ public class AppointmentService {
     public AppointmentResponse updateAppointmentStatus(Long id, AppointmentStatus status, String reason) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        authorizationService.requireProfileOwnership(appointment.getDoctor().getId(), appointment.getPatient().getId());
 
         appointment.setStatus(status);
         
@@ -128,6 +132,7 @@ public class AppointmentService {
     public AppointmentResponse addFollowUpNotes(Long id, String notes) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        authorizationService.requireProfileOwnership(appointment.getDoctor().getId(), appointment.getPatient().getId());
 
         appointment.setFollowUpNotes(notes);
         appointment = appointmentRepository.save(appointment);
@@ -140,6 +145,7 @@ public class AppointmentService {
     public AppointmentResponse rescheduleAppointment(Long id, java.time.LocalDateTime newAppointmentDate, String reason) {
         Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        authorizationService.requireProfileOwnership(appointment.getDoctor().getId(), appointment.getPatient().getId());
 
         log.info("Rescheduling appointment {} from {} to {}", id, appointment.getAppointmentDate(), newAppointmentDate);
 

@@ -7,6 +7,7 @@ import com.oncontrol.oncontrolbackend.profiles.domain.model.DoctorProfile;
 import com.oncontrol.oncontrolbackend.profiles.domain.model.PatientProfile;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.DoctorProfileRepository;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.PatientProfileRepository;
+import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class MedicationService {
     private final MedicationRepository medicationRepository;
     private final DoctorProfileRepository doctorProfileRepository;
     private final PatientProfileRepository patientProfileRepository;
+    private final AuthorizationService authorizationService;
 
     /**
      * Create a new medication
@@ -70,6 +72,7 @@ public class MedicationService {
     public MedicationResponse getMedicationById(Long id) {
         Medication medication = medicationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Medication not found"));
+        authorizationService.requirePatientAccess(medication.getPatient().getId());
         return mapToResponse(medication);
     }
 
@@ -120,6 +123,7 @@ public class MedicationService {
 
         Medication medication = medicationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Medication not found"));
+        authorizationService.requirePatientAccess(medication.getPatient().getId());
 
         if (request.getDosage() != null) {
             medication.setDosage(request.getDosage());
@@ -160,6 +164,7 @@ public class MedicationService {
 
         Medication medication = medicationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Medication not found"));
+        authorizationService.requirePatientAccess(medication.getPatient().getId());
 
         medication.setIsActive(false);
         medication.setEndDate(LocalDate.now());
@@ -215,6 +220,7 @@ public class MedicationService {
 
         Medication medication = medicationRepository.findById(medicationId)
                 .orElseThrow(() -> new IllegalArgumentException("Medication not found"));
+        authorizationService.requirePatientAccess(medication.getPatient().getId());
 
         // Update next dose time (simple logic - can be improved)
         if (medication.getNextDoseTime() != null) {

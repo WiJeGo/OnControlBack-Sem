@@ -15,6 +15,7 @@ import com.oncontrol.oncontrolbackend.treatments.domain.model.TreatmentSession;
 import com.oncontrol.oncontrolbackend.treatments.domain.model.TreatmentType;
 import com.oncontrol.oncontrolbackend.treatments.domain.repository.TreatmentRepository;
 import com.oncontrol.oncontrolbackend.treatments.domain.repository.TreatmentSessionRepository;
+import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class TreatmentService {
     private final TreatmentSessionRepository sessionRepository;
     private final DoctorProfileRepository doctorProfileRepository;
     private final PatientProfileRepository patientProfileRepository;
+    private final AuthorizationService authorizationService;
     private final ObjectMapper objectMapper;
 
     /**
@@ -80,6 +82,7 @@ public class TreatmentService {
     public TreatmentResponse getTreatmentById(Long id) {
         Treatment treatment = treatmentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Treatment not found"));
+        authorizationService.requirePatientAccess(treatment.getPatient().getId());
         return mapToResponse(treatment);
     }
 
@@ -123,6 +126,7 @@ public class TreatmentService {
 
         Treatment treatment = treatmentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Treatment not found"));
+        authorizationService.requirePatientAccess(treatment.getPatient().getId());
 
         if (request.getCurrentCycle() != null) {
             treatment.setCurrentCycle(request.getCurrentCycle());
@@ -172,6 +176,7 @@ public class TreatmentService {
 
         Treatment treatment = treatmentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Treatment not found"));
+        authorizationService.requirePatientAccess(treatment.getPatient().getId());
 
         treatment.setStatus(request.getStatus());
 
@@ -193,6 +198,7 @@ public class TreatmentService {
 
         Treatment treatment = treatmentRepository.findById(treatmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Treatment not found"));
+        authorizationService.requirePatientAccess(treatment.getPatient().getId());
 
         // Calculate session number
         Long completedSessions = sessionRepository.countByTreatmentIdAndStatus(treatmentId, SessionStatus.COMPLETED);
@@ -242,6 +248,9 @@ public class TreatmentService {
      */
     @Transactional(readOnly = true)
     public List<TreatmentSessionResponse> getSessionsByTreatment(Long treatmentId) {
+        Treatment treatment = treatmentRepository.findById(treatmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Treatment not found"));
+        authorizationService.requirePatientAccess(treatment.getPatient().getId());
         return sessionRepository.findByTreatmentIdOrderBySessionDateDesc(treatmentId).stream()
                 .map(this::mapToSessionResponse)
                 .collect(Collectors.toList());

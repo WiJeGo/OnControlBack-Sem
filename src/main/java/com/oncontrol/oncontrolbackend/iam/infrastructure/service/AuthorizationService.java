@@ -7,6 +7,7 @@ import com.oncontrol.oncontrolbackend.profiles.domain.model.Profile;
 import com.oncontrol.oncontrolbackend.profiles.domain.model.ProfileType;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.DoctorProfileRepository;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.PatientProfileRepository;
+import com.oncontrol.oncontrolbackend.profiles.domain.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -28,6 +29,7 @@ public class AuthorizationService {
 
     private final DoctorProfileRepository doctorProfileRepository;
     private final PatientProfileRepository patientProfileRepository;
+    private final ProfileRepository profileRepository;
 
     private Object currentPrincipal() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -98,5 +100,33 @@ public class AuthorizationService {
             }
         }
         throw new AccessDeniedException("You are not allowed to access this patient's data");
+    }
+
+    /**
+     * Resource-level ownership check by the underlying Profile ids that own a resource
+     * (e.g. an appointment's doctor/patient Profiles). Allows the owning profile itself,
+     * or the organization that owns any of those profiles.
+     */
+    public void requireProfileOwnership(Long... ownerProfileIds) {
+        Object principal = currentPrincipal();
+        if (principal instanceof Profile profile) {
+            for (Long id : ownerProfileIds) {
+                if (id != null && id.equals(profile.getId())) {
+                    return;
+                }
+            }
+        } else if (principal instanceof User user) {
+            for (Long id : ownerProfileIds) {
+                if (id == null) {
+                    continue;
+                }
+                Profile owner = profileRepository.findById(id).orElse(null);
+                if (owner != null && owner.getUser() != null
+                        && owner.getUser().getId().equals(user.getId())) {
+                    return;
+                }
+            }
+        }
+        throw new AccessDeniedException("You are not allowed to access this resource");
     }
 }

@@ -11,6 +11,7 @@ import com.oncontrol.oncontrolbackend.profiles.domain.model.DoctorProfile;
 import com.oncontrol.oncontrolbackend.profiles.domain.model.PatientProfile;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.DoctorProfileRepository;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.PatientProfileRepository;
+import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class MedicalHistoryService {
     private final AllergyRepository allergyRepository;
     private final DoctorProfileRepository doctorProfileRepository;
     private final PatientProfileRepository patientProfileRepository;
+    private final AuthorizationService authorizationService;
     private final ObjectMapper objectMapper;
 
     /**
@@ -152,6 +154,7 @@ public class MedicalHistoryService {
     public void deleteAllergy(Long allergyId) {
         Allergy allergy = allergyRepository.findById(allergyId)
                 .orElseThrow(() -> new IllegalArgumentException("Allergy not found"));
+        authorizationService.requirePatientAccess(allergy.getPatient().getId());
 
         allergy.setIsActive(false);
         allergyRepository.save(allergy);
