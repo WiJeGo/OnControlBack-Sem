@@ -1,7 +1,9 @@
 package com.oncontrol.oncontrolbackend.profiles.infrastructure.controller;
 
 import com.oncontrol.oncontrolbackend.profiles.application.dto.CreatePatientRequest;
+import com.oncontrol.oncontrolbackend.profiles.application.dto.DoctorProfileResponse;
 import com.oncontrol.oncontrolbackend.profiles.application.dto.PatientProfileResponse;
+import com.oncontrol.oncontrolbackend.profiles.application.dto.UpdateDoctorRequest;
 import com.oncontrol.oncontrolbackend.profiles.application.service.ProfileService;
 import com.oncontrol.oncontrolbackend.appointments.application.service.AppointmentService;
 import com.oncontrol.oncontrolbackend.symptoms.application.service.SymptomService;
@@ -62,6 +64,32 @@ public class DoctorController {
             log.error("Error creating patient", e);
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("message", "Error creating patient: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    @PutMapping("/{doctorProfileId}")
+    @Operation(summary = "Update doctor profile", description = "Doctor updates their own profile (partial update)")
+    public ResponseEntity<?> updateDoctorProfile(
+            @PathVariable Long doctorProfileId,
+            @Valid @RequestBody UpdateDoctorRequest request) {
+        authorizationService.requireDoctor(doctorProfileId);
+        try {
+            DoctorProfileResponse doctor = profileService.updateDoctorProfile(doctorProfileId, request);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("doctor", doctor);
+            response.put("message", "Profile updated successfully");
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        } catch (Exception e) {
+            log.error("Error updating doctor profile", e);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Error updating profile: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }

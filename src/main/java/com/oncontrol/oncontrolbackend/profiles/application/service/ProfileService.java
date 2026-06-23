@@ -197,6 +197,52 @@ public class ProfileService {
         return mapToPatientProfileResponse(patientProfile);
     }
 
+    /**
+     * Partial update of a doctor's own profile. Only non-null fields are applied.
+     * Email, password and organization are intentionally not editable here.
+     */
+    @Transactional
+    public DoctorProfileResponse updateDoctorProfile(Long doctorProfileId, UpdateDoctorRequest request) {
+        log.info("Updating doctor profile {}", doctorProfileId);
+
+        DoctorProfile doctorProfile = doctorProfileRepository.findById(doctorProfileId)
+                .orElseThrow(() -> new RuntimeException("Doctor profile not found"));
+        Profile profile = doctorProfile.getProfile();
+
+        // Common profile fields
+        if (request.getFirstName() != null) profile.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) profile.setLastName(request.getLastName());
+        if (request.getPhone() != null) profile.setPhone(request.getPhone());
+        if (request.getBirthDate() != null) profile.setBirthDate(request.getBirthDate());
+        if (request.getCity() != null) profile.setCity(request.getCity());
+        if (request.getAddress() != null) profile.setAddress(request.getAddress());
+
+        // License number is unique: guard against collisions before changing it
+        if (request.getLicenseNumber() != null
+                && !request.getLicenseNumber().equals(doctorProfile.getLicenseNumber())) {
+            doctorProfileRepository.findByLicenseNumber(request.getLicenseNumber())
+                    .filter(existing -> !existing.getId().equals(doctorProfileId))
+                    .ifPresent(existing -> {
+                        throw new IllegalArgumentException("License number already in use");
+                    });
+            doctorProfile.setLicenseNumber(request.getLicenseNumber());
+        }
+
+        // Doctor-specific fields
+        if (request.getSpecialization() != null) doctorProfile.setSpecialization(request.getSpecialization());
+        if (request.getYearsOfExperience() != null) doctorProfile.setYearsOfExperience(request.getYearsOfExperience());
+        if (request.getHospitalAffiliation() != null) doctorProfile.setHospitalAffiliation(request.getHospitalAffiliation());
+        if (request.getConsultationFee() != null) doctorProfile.setConsultationFee(request.getConsultationFee());
+        if (request.getBio() != null) doctorProfile.setBio(request.getBio());
+        if (request.getIsAvailable() != null) doctorProfile.setIsAvailable(request.getIsAvailable());
+
+        profileRepository.save(profile);
+        doctorProfile = doctorProfileRepository.save(doctorProfile);
+
+        log.info("Doctor profile {} updated successfully", doctorProfileId);
+        return mapToDoctorProfileResponse(doctorProfile);
+    }
+
     @Transactional(readOnly = true)
     public List<DoctorProfileResponse> getAllActiveDoctors() {
         return profileRepository.findAllActiveDoctors().stream()
