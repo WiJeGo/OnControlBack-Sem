@@ -198,6 +198,29 @@ public class ProfileService {
     }
 
     /**
+     * Partial update of a patient's own profile (common profile fields only).
+     */
+    @Transactional
+    public PatientProfileResponse updatePatientProfile(Long patientProfileId, UpdatePatientRequest request) {
+        log.info("Updating patient profile {}", patientProfileId);
+
+        PatientProfile patientProfile = patientProfileRepository.findById(patientProfileId)
+                .orElseThrow(() -> new RuntimeException("Patient profile not found"));
+        Profile profile = patientProfile.getProfile();
+
+        if (request.getFirstName() != null) profile.setFirstName(request.getFirstName());
+        if (request.getLastName() != null) profile.setLastName(request.getLastName());
+        if (request.getPhone() != null) profile.setPhone(request.getPhone());
+        if (request.getBirthDate() != null) profile.setBirthDate(request.getBirthDate());
+        if (request.getCity() != null) profile.setCity(request.getCity());
+        if (request.getAddress() != null) profile.setAddress(request.getAddress());
+
+        profileRepository.save(profile);
+        log.info("Patient profile {} updated successfully", patientProfileId);
+        return mapToPatientProfileResponse(patientProfile);
+    }
+
+    /**
      * Partial update of a doctor's own profile. Only non-null fields are applied.
      * Email, password and organization are intentionally not editable here.
      */

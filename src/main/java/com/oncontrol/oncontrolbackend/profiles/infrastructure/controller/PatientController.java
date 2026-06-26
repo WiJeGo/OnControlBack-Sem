@@ -3,13 +3,18 @@ package com.oncontrol.oncontrolbackend.profiles.infrastructure.controller;
 import com.oncontrol.oncontrolbackend.appointments.application.service.AppointmentService;
 import com.oncontrol.oncontrolbackend.symptoms.application.service.SymptomService;
 import com.oncontrol.oncontrolbackend.symptoms.application.dto.SymptomResponse;
+import com.oncontrol.oncontrolbackend.profiles.application.dto.PatientProfileResponse;
+import com.oncontrol.oncontrolbackend.profiles.application.dto.UpdatePatientRequest;
+import com.oncontrol.oncontrolbackend.profiles.application.service.ProfileService;
 import com.oncontrol.oncontrolbackend.profiles.domain.model.Profile;
 import com.oncontrol.oncontrolbackend.profiles.domain.repository.PatientProfileRepository;
 import com.oncontrol.oncontrolbackend.iam.infrastructure.service.AuthorizationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +36,33 @@ public class PatientController {
     private final SymptomService symptomService;
     private final PatientProfileRepository patientProfileRepository;
     private final AuthorizationService authorizationService;
+    private final ProfileService profileService;
+
+    @PutMapping("/{patientProfileId}")
+    @Operation(summary = "Update patient profile", description = "Patient updates their own profile (partial update)")
+    public ResponseEntity<?> updatePatientProfile(
+            @PathVariable Long patientProfileId,
+            @Valid @RequestBody UpdatePatientRequest request) {
+        authorizationService.requirePatientAccess(patientProfileId);
+        try {
+            PatientProfileResponse patient = profileService.updatePatientProfile(patientProfileId, request);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("patient", patient);
+            response.put("message", "Profile updated successfully");
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        } catch (Exception e) {
+            log.error("Error updating patient profile", e);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Error updating profile: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
 
     @GetMapping("/{patientProfileId}/dashboard")
     @Operation(summary = "Get patient dashboard", description = "Get all patient data: appointments, symptoms, stats")
