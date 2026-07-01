@@ -7,12 +7,16 @@ import com.oncontrol.oncontrolbackend.imaging.application.dto.LungSegmentationRe
 import com.oncontrol.oncontrolbackend.imaging.domain.model.ImagingStudy;
 import com.oncontrol.oncontrolbackend.imaging.domain.repository.ImagingStudyRepository;
 import com.oncontrol.oncontrolbackend.imaging.infrastructure.client.ImagingServiceClient;
+import com.oncontrol.oncontrolbackend.imaging.infrastructure.client.OrthancClient;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -22,6 +26,7 @@ public class ImagingController {
 
     private final ImagingServiceClient imagingServiceClient;
     private final ImagingStudyRepository imagingStudyRepository;
+    private final OrthancClient orthancClient;
     private final AuthorizationService authorizationService;
 
     // --- Segmentation (proxy to the FastAPI microservice) ---
@@ -83,5 +88,38 @@ public class ImagingController {
                 .build());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ImagingStudyResponse.from(saved));
+    }
+
+    /**
+     * Uploads a DICOM file/ZIP straight from the patient's chart: pushes it to
+     * Orthanc and links the resulting study to THIS patient in one step. The
+     * patient is chosen implicitly by whose chart the upload came from.
+     */
+    @PostMapping(value = "/patients/{patientProfileId}/upload",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImagingStudyResponse> uploadStudy(
+            @PathVariable Long patientProfileId,
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        authorizationService.requirePatientAccess(patientProfileId);
+
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String orthancStudyId = orthancClient.uploadStudy(file.getBytes());
+
+        // Reuse the link if this study is already associated with the patient.
+        ImagingStudy study = imagingStudyRepository
+                .findByPatientProfileIdAndOrthancStudyId(patientProfileId, orthancStudyId)
+                .orElseGet(() -> imagingStudyRepository.save(ImagingStudy.builder()
+                        .patientProfileId(patientProfileId)
+                        .orthancStudyId(orthancStudyId)
+                        .label("Tomografía")
+                        .modality("CT")
+                        .description(file.getOriginalFilename())
+                        .build()));
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(ImagingStudyResponse.from(study));
     }
 }
