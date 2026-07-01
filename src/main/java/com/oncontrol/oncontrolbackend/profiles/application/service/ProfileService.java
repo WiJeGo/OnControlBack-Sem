@@ -208,14 +208,27 @@ public class ProfileService {
                 .orElseThrow(() -> new RuntimeException("Patient profile not found"));
         Profile profile = patientProfile.getProfile();
 
+        // Demographic (common profile) — patient-editable
         if (request.getFirstName() != null) profile.setFirstName(request.getFirstName());
         if (request.getLastName() != null) profile.setLastName(request.getLastName());
         if (request.getPhone() != null) profile.setPhone(request.getPhone());
         if (request.getBirthDate() != null) profile.setBirthDate(request.getBirthDate());
         if (request.getCity() != null) profile.setCity(request.getCity());
         if (request.getAddress() != null) profile.setAddress(request.getAddress());
-
         profileRepository.save(profile);
+
+        // Clinical (patient profile) — doctor-managed
+        if (request.getCancerType() != null) patientProfile.setCancerType(request.getCancerType());
+        if (request.getCancerStage() != null) patientProfile.setCancerStage(request.getCancerStage());
+        if (request.getDiagnosisDate() != null) patientProfile.setDiagnosisDate(request.getDiagnosisDate());
+        if (request.getTreatmentStatus() != null) patientProfile.setTreatmentStatus(request.getTreatmentStatus());
+        if (request.getBloodType() != null) patientProfile.setBloodType(request.getBloodType());
+        if (request.getAllergies() != null) patientProfile.setAllergies(request.getAllergies());
+        if (request.getEmergencyContactName() != null) patientProfile.setEmergencyContactName(request.getEmergencyContactName());
+        if (request.getEmergencyContactPhone() != null) patientProfile.setEmergencyContactPhone(request.getEmergencyContactPhone());
+        if (request.getEmergencyContactRelationship() != null) patientProfile.setEmergencyContactRelationship(request.getEmergencyContactRelationship());
+        patientProfileRepository.save(patientProfile);
+
         log.info("Patient profile {} updated successfully", patientProfileId);
         return mapToPatientProfileResponse(patientProfile);
     }
