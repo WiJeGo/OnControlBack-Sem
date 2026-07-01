@@ -44,6 +44,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/medications/**").authenticated()
                         .requestMatchers("/api/medical-history/**").authenticated()
                         .requestMatchers("/api/reports/**").authenticated()
+                        .requestMatchers("/api/imaging/**").authenticated()
                         .requestMatchers("/api/patients/**").authenticated()
                         .requestMatchers("/api/doctors/**").authenticated()
                         .requestMatchers("/api/organizations/**").authenticated()

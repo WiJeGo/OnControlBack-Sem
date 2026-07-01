@@ -14,7 +14,7 @@ public class WebConfig implements WebMvcConfigurer {
      * combined with allowCredentials(true), it let ANY Vercel deployment send
      * credentialed requests. Add your real frontend URL to the env var if it changes.
      */
-    @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost:5173,https://on-control.vercel.app,https://oncontrol.vercel.app,https://oncontrol-front-sem.vercel.app}")
+    @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost:5173,https://on-control.vercel.app,https://oncontrol.vercel.app,https://oncontrol-front-sem.vercel.app, https://clench-delegate-unbolted.ngrok-free.dev/}")
     private String[] allowedOrigins;
 
     @Override
